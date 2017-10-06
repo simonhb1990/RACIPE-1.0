@@ -14,7 +14,7 @@ limitations under the License.
 Paper to cite:
 Huang, Bin, Mingyang Lu, Dongya Jia, Eshel Ben-Jacob, Herbert Levine, and Jose N. Onuchic. "Interrogating the topological robustness of gene regulatory circuits by randomization." PLoS computational biology 13, no. 3 (2017): e1005456.
 
-This code has used PCG Random Number Generation script by Melissa O'Neill
+This code has used PCG Random Number Generation script by Melissa O'Neill<br />
 ------------------------------------------------------------------<br />
 
 # Make RACIPE 1.0
@@ -35,7 +35,7 @@ Use "make" to compile and use "make clean" to clean all compiled files. The exec
   2. Run with .cfg file<br />
     `$ ./RACIPE *.cfg [options]`<br />
     .prs file will be automatically regenerated according to the setting in .cfg file no matter old .prs file exists or not.<br />
-    To change the setting of the simulation, you can either change the .cfg file directly or use options. However, the options set in command line will always override the setting in .cfg file. New configuration file will be generated as "_tmp.cfg" in the same fold to store the simulation setting for the current run. <br />
+    To change the setting of the simulation, you can either change the .cfg file directly or use options. However, the options set in command line will always override the setting in .cfg file. New configuration file will be generated as "_tmp.cfg" in the same fold to store the simulation setting for the current run. <br /><br />
     Similarily,<br />
     If the "-flag" option is set to 0 (default), RACIPE will calculate the results for all RACIPE models, which means "_parameter.dat", "_solution_.dat", and "_T_test.dat" will be generated. <br />
     If the "-flag" option is set to 1, updated configuration file will be generated as "_tmp.cfg" in the same fold. <br />
