@@ -31,6 +31,7 @@
 
 # include "RACIPELIB.h"
 # include "pcg_basic.h"
+# include "rkf45.h"
 
 /*********Shared Functions*********/
 // Generate random value in (minV, maxV) following uniform distribution
@@ -210,35 +211,37 @@ void check_inputfile (int argc, char **argv, struct topo *topoinfo, struct opts 
   }
   else if (argc == 2 && strcmp(argv[1], "-h") == 0){
     printf("Available options:\n");
-    printf("-h             : Show all available options\n");
-    printf("-maxtime       : Maximum time for the simulation (Default 23.5 h)\n");
-    printf("-flag          : Only produce .cfg file or not (Default 0, not only produce .cfg file);\n");
-    printf("-KDID          : Gene or link (See their ID in .cfg file) to be knockdown\n");
-    printf("-OEID          : Gene (See their ID in .cfg file) to be overexpressed. (follow by -OEFD)\n");
-    printf("-OEFD          : Fold change to overexpress a gene (-OEID must be set ahead, the value need to be bigger than 1). (Default 1)\n");
-    printf("-DEID          : Gene (See their ID in .cfg file) to be downexpressed. (follow by -DEFD)\n");
-    printf("-DEFD          : Fold change to downexpress a gene (-DEID must be set ahead, the value need to be bigger than 1). (Default 1)\n");
+    printf("-h             : Show all available options.\n");
+    printf("-maxtime       : Maximum time for the simulation (Default 23.5 h).\n");
+    printf("-solver        : The integrator method (1 --> Euler or 2 --> RK45) to solve the ODEs equations (Default 1).\n");
+    printf("-flag          : run RACIPE to produce the .cfg file only or the whole simulation (Default 0, perform the whole simulation).\n");
+    printf("-KDID          : Gene or link (See their ID in the .cfg file) to be knocked down.\n");
+    printf("-OEID          : Gene (See their ID in the .cfg file) to be overexpressed. (follow by -OEFD).\n");
+    printf("-OEFD          : Fold change to overexpress a gene (-OEID must be first set in the option, the value need to be bigger than 1). (Default 1) if the corresponding OEFD is not set, it will be set to 1.\n");
+    printf("-DEID          : Gene (See their ID in the .cfg file) to be downexpressed. (follow by -DEFD).\n");
+    printf("-DEFD          : Fold change to downexpress a gene (-DEID must be first set in the option, the value need to be bigger than 1). (Default 1) if the corresponding DEFD is not set, it will be set to 1.\n");
     printf("-dist          : Distribution used for randomization\n");
     printf("                 1 ---> Uniform Distribution (Default)\n");
     printf("                 2 ---> Guassian Distribution\n");
     printf("                 3 ---> Exponential Distribution\n");
-    printf("-SF            : Scale the distribution range, should be smaller than 1 (Default 1)\n");
-    printf("-num_findT     : Number of simulations used to estimate threshold (Default 10000)\n");
-    printf("-num_paras     : Number of RACIPE models to generate (Default 100)\n");
-    printf("-num_ode       : Number of Random initial values to solve ODEs (Default 100)\n");
-    printf("-num_stability : Maximum number of stable states to save for one RACIPE model (Default 10)\n"); 
-    printf("-thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0)\n");
-    printf("-Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes))\n");
-    printf("-stepsize      : Stepsize for solving ODE (Default 0.1)\n");
-    printf("-maxiters      : Maximum of Iteration for solving ODE at each RIVs (Default 20)\n");
-    printf("-Toggle_T_test : Test threshold assumption or not (Default 1 (yes))\n");
-    printf("-seed          : Set up random seed (Default 1)\n");
+    printf("-SF            : Scale the distribution ranges of all the parameters except for the hill coefficients, should be smaller than 1 (Default 1).\n");
+    printf("-num_findT     : The number of simulations used to estimate the thresholds (Default 10000).\n");
+    printf("-num_paras     : The number of RACIPE models to generate (Default 100).\n");
+    printf("-num_ode       : The number of Random initial values to solve ODEs (Default 100).\n");
+    printf("-num_stability : The maximum number of stable states to save for one RACIPE model (Default 10).\n"); 
+    printf("-thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0).\n");
+    printf("-Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes)).\n");
+    printf("-stepsize      : Stepsize for solving ODEs (Default 0.1).\n");
+    printf("-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition (Default 20).\n");
+    printf("-Toggle_T_test : Test the threshold assumption or not (Default 1 (yes)).\n");
+    printf("-SBML_model    : Output a model in the SBML format. The parameter will be the ID of the model (start from 1) to save (Default 0 (no SBML output)).\n");
+    printf("-seed          : random seed (Default 1).\n");
     printf("-minP          : Minimum production rate (Default 1.0)\n");
     printf("-maxP          : Maximum production rate (Default 100.0)\n");
     printf("-minK          : Minimum degradation rate (Default 0.1)\n");
     printf("-maxK          : Maximum degradation rate (Default 1.0)\n");
-    printf("-minN          : Minimum coefficient (Default 1.0)\n");
-    printf("-maxN          : Maximum coefficient (Default 6.0)\n");
+    printf("-minN          : Minimum Hill coefficient (Default 1.0)\n");
+    printf("-maxN          : Maximum Hill coefficient (Default 6.0)\n");
     printf("-minF          : Minimum fold change (Default 1.0)\n");
     printf("-maxF          : Maximum fold change (Default 100.0)\n");
     exit(6);
@@ -302,6 +305,7 @@ void initial_simuopts (int argc, char **argv, struct topo *topoinfo, struct opts
   // Default setting
   if (simu_opts->exts == 0){
     simu_opts->maxtime       = 23.5;
+    simu_opts->solver         = 1;
     simu_opts->flag          = 0;
     simu_opts->numKD         = 0;
     simu_opts->KDID          = (int *)calloc(20, sizeof(int));
@@ -329,6 +333,7 @@ void initial_simuopts (int argc, char **argv, struct topo *topoinfo, struct opts
     simu_opts->stepsize      = 0.1;
     simu_opts->maxiters      = 20;
     simu_opts->Toggle_T_test = 1;
+    simu_opts->SBML_model    = 0;
     simu_opts->myseed        = 1;
     simu_opts->minP          = 1.0;
     simu_opts->maxP          = 100.0;
@@ -383,6 +388,20 @@ void initial_simuopts (int argc, char **argv, struct topo *topoinfo, struct opts
         simu_opts->SF = atof(argv[i+1]);
         printf("### Warning: Hill coefficients will not be scaled!\n");
       }
+      else if (strcmp(argv[i], "-solver") == 0){
+        simu_opts->solver = atoi(argv[i+1]);
+        if (simu_opts->solver == 1) {
+          printf("1st Euler method is used to solve ODEs.\n");
+        }
+        else if (simu_opts->solver == 2) {
+          printf("RK45 method is used to solve ODEs.\n");
+        }
+        else {
+          printf("### Wrong: no such options for solver!\n");
+          exit(0);
+        }
+        
+      }
       else if (strcmp(argv[i], "-num_findT") == 0){
         simu_opts->num_findT = atoi(argv[i+1]);
       }
@@ -409,6 +428,9 @@ void initial_simuopts (int argc, char **argv, struct topo *topoinfo, struct opts
       }
       else if (strcmp(argv[i], "-Toggle_T_test") == 0){
         simu_opts->Toggle_T_test = atoi(argv[i+1]);
+      }
+      else if (strcmp(argv[i], "-SBML_model") == 0){
+        simu_opts->SBML_model = atoi(argv[i+1]);
       }
       else if (strcmp(argv[i], "-KDID") == 0){
         if (simu_opts->exts == 1 && KDmarker == 0){
@@ -491,35 +513,37 @@ void initial_simuopts (int argc, char **argv, struct topo *topoinfo, struct opts
       else{
         printf("### Wrong: Can not recognize the input arguments.\n");
         printf("Please use one of the follwing:\n");
-        printf("-h             : Show all available options\n");
-        printf("-maxtime       : Maximum time for the simulation (Default 23.5 h)\n");
-        printf("-flag          : Only produce .cfg file or not (Default 0, not only produce .cfg file);\n");
-        printf("-KDID          : Gene or link (See their ID in .cfg file) to be knockdown\n");
-        printf("-OEID          : Gene (See their ID in .cfg file) to be overexpressed. (follow by -OEFD)\n");
-        printf("-OEFD          : Fold change to overexpress a gene (used after -OEID). (Default 1)\n");
-        printf("-DEID          : Gene (See their ID in .cfg file) to be downexpressed. (follow by -DEFD)\n");
-        printf("-DEFD          : Fold change to downexpress a gene (used after -DEID). (Default 1)\n");
+        printf("-h             : Show all available options.\n");
+        printf("-maxtime       : Maximum time for the simulation (Default 23.5 h).\n");
+        printf("-solver        : The integrator method (1 --> Euler or 2 --> RK45) to solve the ODEs equations (Default 1).\n");
+        printf("-flag          : run RACIPE to produce the .cfg file only or the whole simulation (Default 0, perform the whole simulation).\n");
+        printf("-KDID          : Gene or link (See their ID in the .cfg file) to be knocked down.\n");
+        printf("-OEID          : Gene (See their ID in the .cfg file) to be overexpressed. (follow by -OEFD).\n");
+        printf("-OEFD          : Fold change to overexpress a gene (-OEID must be first set in the option, the value need to be bigger than 1). (Default 1) if the corresponding OEFD is not set, it will be set to 1.\n");
+        printf("-DEID          : Gene (See their ID in the .cfg file) to be downexpressed. (follow by -DEFD).\n");
+        printf("-DEFD          : Fold change to downexpress a gene (-DEID must be first set in the option, the value need to be bigger than 1). (Default 1) if the corresponding DEFD is not set, it will be set to 1.\n");
         printf("-dist          : Distribution used for randomization\n");
         printf("                 1 ---> Uniform Distribution (Default)\n");
         printf("                 2 ---> Guassian Distribution\n");
         printf("                 3 ---> Exponential Distribution\n");
-        printf("-SF            : Scale the distribution range, should be smaller than 1 (Default 1)\n");
-        printf("-num_findT     : Number of simulations used to estimate threshold (Default 10000)\n");
-        printf("-num_paras     : Number of RACIPE models to generate (Default 100)\n");
-        printf("-num_ode       : Number of Random initial values to solve ODEs (Default 100)\n");
-        printf("-num_stability : Maximum number of stable states to save for one RACIPE model (Default 10)\n"); 
-        printf("-thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0)\n");
-        printf("-Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes))\n");
-        printf("-stepsize      : Stepsize for solving ODE (Default 0.1)\n");
-        printf("-maxiters      : Maximum of Iteration for solving ODE at each RIVs (Default 20)\n");
-        printf("-Toggle_T_test : Test threshold assumption or not (Default 1 (yes))\n");
-        printf("-seed          : Set up random seed (Default 1)\n");
+        printf("-SF            : Scale the distribution ranges of all the parameters except for the hill coefficients, should be smaller than 1 (Default 1).\n");
+        printf("-num_findT     : The number of simulations used to estimate the thresholds (Default 10000).\n");
+        printf("-num_paras     : The number of RACIPE models to generate (Default 100).\n");
+        printf("-num_ode       : The number of Random initial values to solve ODEs (Default 100).\n");
+        printf("-num_stability : The maximum number of stable states to save for one RACIPE model (Default 10).\n"); 
+        printf("-thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0).\n");
+        printf("-Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes)).\n");
+        printf("-stepsize      : Stepsize for solving ODEs (Default 0.1).\n");
+        printf("-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition (Default 20).\n");
+        printf("-Toggle_T_test : Test the threshold assumption or not (Default 1 (yes)).\n");
+        printf("-SBML_model    : Output a model in the SBML format. The parameter will be the ID of the model (start from 1) to save (Default 0 (no SBML output)).\n");
+        printf("-seed          : random seed (Default 1).\n");
         printf("-minP          : Minimum production rate (Default 1.0)\n");
         printf("-maxP          : Maximum production rate (Default 100.0)\n");
         printf("-minK          : Minimum degradation rate (Default 0.1)\n");
         printf("-maxK          : Maximum degradation rate (Default 1.0)\n");
-        printf("-minN          : Minimum coefficient (Default 1.0)\n");
-        printf("-maxN          : Maximum coefficient (Default 6.0)\n");
+        printf("-minN          : Minimum Hill coefficient (Default 1.0)\n");
+        printf("-maxN          : Maximum Hill coefficient (Default 6.0)\n");
         printf("-minF          : Minimum fold change (Default 1.0)\n");
         printf("-maxF          : Maximum fold change (Default 100.0)\n");
         exit(6);
@@ -1510,8 +1534,15 @@ void run_RACIPE(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprl
 
     set_parameters(simu_opts, topoinfo, tmprlt);
     
+    // printf("RACIPELIB 1514");
+
     for (j = 0; j < simu_opts->num_ode; j++){
-        solve_ODE(j, simu_opts, topoinfo, tmprlt);
+      if (simu_opts->solver == 1) {
+        solve_ODE_euler(j, simu_opts, topoinfo, tmprlt);
+      }
+      else {
+        solve_ODE_rk45(j, simu_opts, topoinfo, tmprlt);
+      }
     }
 
     count_state (simu_opts, topoinfo, tmprlt);
@@ -1519,6 +1550,10 @@ void run_RACIPE(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprl
     save_model_paras(simu_opts, topoinfo, tmprlt, i);
     save_model_solns(simu_opts, topoinfo, tmprlt, i);
     T_test          (simu_opts, topoinfo, tmprlt, i);
+
+    if (simu_opts->SBML_model == i){
+      export_SBML_model(simu_opts, topoinfo, tmprlt, i);
+    }
 
     end = clock();
     time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
@@ -1687,6 +1722,234 @@ void save_model_solns(struct opts *simu_opts, struct topo *topoinfo, struct rlt 
     }
     free(f_s);
   }
+}
+
+void export_SBML_model (struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt, int modelID)
+{
+  FILE *f_sbml = NULL;                  
+  char fpname [100] = "";
+
+  int h = 0;
+  int i = 0;
+  int j = 0;
+
+  int cnt = tmprlt->Nstb;
+
+  char KDIDname[100] = "";
+  char OEIDname[100] = "";
+  char DEIDname[100] = "";
+  char modelIDname[100] = "";
+  char nstbname[100] = "";
+
+  for (h = 1; h <= cnt; h++){
+
+    // printf("stable state is %d\n", cnt);
+
+    if (f_sbml == NULL) {
+      strcpy(fpname, topoinfo->modelname);
+      if (simu_opts->exts == 0){
+        if (simu_opts->numKD != 0){
+          strcat(fpname, "_KD");
+          for (i = 0; i < simu_opts->numKD; i++){
+            sprintf(KDIDname, "%d", simu_opts->KDID[i]);
+            strcat(fpname, "_");
+            strcat(fpname, KDIDname);
+          }
+        }
+        if (simu_opts->numOE != 0){
+          strcat(fpname, "_OE");
+          for (i = 0; i < simu_opts->numOE; i++){
+            sprintf(OEIDname, "%d", simu_opts->OEID[i]);
+            strcat(fpname, "_");
+            strcat(fpname, OEIDname);
+          }
+        }
+        if (simu_opts->numDE != 0){
+          strcat(fpname, "_DE");
+          for (i = 0; i < simu_opts->numDE; i++){
+            sprintf(DEIDname, "%d", simu_opts->DEID[i]);
+            strcat(fpname, "_");
+            strcat(fpname, DEIDname);
+          }
+        }
+      }
+      strcat(fpname, "_sbml");
+      sprintf(modelIDname, "%d",  modelID);
+      strcat(fpname, "_");
+      strcat(fpname, modelIDname);
+
+      sprintf(nstbname, "%d", h);
+      strcat(fpname, "_");
+      strcat(fpname, nstbname);
+      strcat(fpname, ".xml");
+      f_sbml   = fopen(fpname,"w");
+    }
+
+    // write the header
+    fprintf(f_sbml, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    fprintf(f_sbml, "<sbml level=\"2\" version=\"3\" xmlns=\"http://www.sbml.org/sbml/level2/version3\">\n");
+    fprintf(f_sbml, "\t<model name=\"No_%d_model_%d\">\n", modelID, h);
+
+    // write the defined function
+    fprintf(f_sbml, "\t\t<listOfFunctionDefinitions>\n");
+    fprintf(f_sbml, "\t\t\t<functionDefinition id=\"hillfunction\">\n");
+    fprintf(f_sbml, "\t\t\t\t<math xmlns=\"http://www.w3.org/1998/Math/MathML\"\n");
+    fprintf(f_sbml, "\t\t\t\t\txmlns:sbml=\"http://www.sbml.org/sbml/level3/version2/core\">\n");
+    fprintf(f_sbml, "\t\t\t\t\t<lambda>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t<bvar><ci> x </ci></bvar>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t<bvar><ci> x0 </ci></bvar>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t<bvar><ci> lamda </ci></bvar>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t<bvar><ci> nx </ci></bvar>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t<plus/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t<ci> lamda </ci>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t<times/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<minus/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<cn>1.0</cn>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>lamda</ci>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<divide/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<cn>1.0</cn>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<plus/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<cn>1.0</cn>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t<power/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t<apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t\t<divide/>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t\t<ci>x</ci>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t\t<ci>x0</ci>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t\t<ci>nx</ci>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t\t</apply>\n");
+    fprintf(f_sbml, "\t\t\t\t\t</lambda>\n");
+    fprintf(f_sbml, "\t\t\t\t</math>\n");
+    fprintf(f_sbml, "\t\t\t</functionDefinition>\n");
+    fprintf(f_sbml, "\t\t</listOfFunctionDefinitions>\n");
+
+    // write the list of species
+    fprintf(f_sbml, "\t\t<listOfSpecies>\n");
+    for (i=0; i<topoinfo->numG; i++){
+      fprintf(f_sbml, "\t\t\t<species id=\"x%d\"  initialAmount=\"%f\"    name=\"%s\"/>\n", i, tmprlt->soln[topoinfo->numG*(h-1) + i], topoinfo->Gname[i]);
+    }
+    fprintf(f_sbml, "\t\t</listOfSpecies>\n");
+
+    // write the list of parameters
+    fprintf(f_sbml, "\t\t<listOfParameters>\n");
+    // production
+    for (i=0; i<topoinfo->numG; i++){
+      fprintf(f_sbml, "\t\t\t<parameter id=\"g%d\"  value=\"%f\"/>\n", i, tmprlt->paras[i]);
+    }
+    // degradation
+    for (i=0; i<topoinfo->numG; i++){
+      fprintf(f_sbml, "\t\t\t<parameter id=\"k%d\"  value=\"%f\"/>\n", i, tmprlt->paras[i+topoinfo->numG]);
+    }
+    // Threshold
+    for (i = 0; i < topoinfo->numR; i++){
+      fprintf(f_sbml, "\t\t\t<parameter id=\"T%d\"  value=\"%f\"/>\n", 3*i + 2*topoinfo->numG, tmprlt->paras[3*i + 2*topoinfo->numG]);
+    }
+
+    // Coefficient
+    for (i = 0; i < topoinfo->numR; i++){
+      fprintf(f_sbml, "\t\t\t<parameter id=\"n%d\"  value=\"%f\"/>\n", 3*i + 2*topoinfo->numG + 1, tmprlt->paras[3*i + 2*topoinfo->numG + 1]);
+    }
+
+    // lambda
+    for (i = 0; i < topoinfo->numR; i++){
+        if (topoinfo->prsrandrange[2][3*i + 2 + 2*topoinfo->numG] == 1) {      // Activation
+          fprintf(f_sbml, "\t\t\t<parameter id=\"lambda%d\"  value=\"%f\"/>\n", 3*i + 2*topoinfo->numG + 2, tmprlt->paras[3*i + 2*topoinfo->numG + 2]);
+        }
+        else if (topoinfo->prsrandrange[2][3*i + 2 + 2*topoinfo->numG] == 2) { // Inhibition
+          fprintf(f_sbml, "\t\t\t<parameter id=\"lambda%d\"  value=\"%f\"/>\n", 3*i + 2*topoinfo->numG + 2, tmprlt->paras[3*i + 2*topoinfo->numG + 2]);
+        }
+    }
+
+    fprintf(f_sbml, "\t\t</listOfParameters>\n");
+
+    // write the list of reastions
+    fprintf(f_sbml, "\t\t<listOfReactions>\n");
+    for(i = 0; i < topoinfo->numG; i++){
+      fprintf(f_sbml, "\t\t\t<reaction id=\"eq_%d\">\n", i+1);
+      fprintf(f_sbml, "\t\t\t\t<listOfProducts>\n");
+      fprintf(f_sbml, "\t\t\t\t\t<speciesReference species=\"x%d\" />\n", i);
+      fprintf(f_sbml, "\t\t\t\t</listOfProducts>\n");
+                  
+
+      fprintf(f_sbml, "\t\t\t\t<kineticLaw>\n");
+      fprintf(f_sbml, "\t\t\t\t\t<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t<apply>\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t\t<minus/>\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t\t<apply>\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t\t\t<times/>\n");
+
+      // production
+      fprintf(f_sbml, "\t\t\t\t\t\t\t\t<ci>g%d</ci>\n", i);
+                    
+      // regulation
+      for (j = 0; j < topoinfo->numR; j++){
+        if (topoinfo->TargetG[j] == i){
+          if (topoinfo->TypeR[j] == 1){ //Activation       
+            // fprintf(f_model, "*(Hillshift(ytmp(%d), p(%d), p(%d), p(%d)/p(%d)))", topoinfo->SourceG[j]+1, 2*topoinfo->numG+3*(count-1)+1, 2*topoinfo->numG+3*(count-1)+1+1, 2*topoinfo->numG+3*(count-1)+2+1, 2*topoinfo->numG+3*(count-1)+2+1);
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t<apply>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<divide/>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<apply>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<ci>hillfunction</ci>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<ci>x%d</ci>\n", topoinfo->SourceG[j]);
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<ci>T%d</ci>\n", 2*topoinfo->numG+3*j); //threshold
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<ci>lambda%d</ci>\n", 2*topoinfo->numG+3*j+2); //fold change
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t\t<ci>n%d</ci>\n", 2*topoinfo->numG+3*j+1); //coefficient
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t</apply>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>lambda%d</ci>\n", 2*topoinfo->numG+3*j+2); //fold change
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t</apply>\n");
+          }
+          else if (topoinfo->TypeR[j] == 2) { //Inhibition
+            // fprintf(f_model, "*Hillshift(ytmp(%d), p(%d), p(%d), p(%d))",        topoinfo->SourceG[j]+1, 2*topoinfo->numG+3*(count-1)+1, 2*topoinfo->numG+3*(count-1)+1+1, 2*topoinfo->numG+3*(count-1)+2+1);
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t<apply>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>hillfunction</ci>\n");
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>x%d</ci>\n", topoinfo->SourceG[j]);
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>T%d</ci>\n", 2*topoinfo->numG+3*j); //threshold
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>lambda%d</ci>\n", 2*topoinfo->numG+3*j+2); //fold change
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t\t<ci>n%d</ci>\n", 2*topoinfo->numG+3*j+1); //coefficient
+            fprintf(f_sbml, "\t\t\t\t\t\t\t\t</apply>\n");
+          }
+        }
+        
+      }
+
+      fprintf(f_sbml, "\t\t\t\t\t\t\t</apply>\n");
+
+      // degradation
+      fprintf(f_sbml, "\t\t\t\t\t\t\t<apply>\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t\t<times/>\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t\t\t<ci>k%d</ci>\n", i);
+      fprintf(f_sbml, "\t\t\t\t\t\t\t\t<ci>x%d</ci>\n", i);
+      fprintf(f_sbml, "\t\t\t\t\t\t\t</apply>\n");
+      fprintf(f_sbml, "\t\t\t\t\t\t</apply>\n");
+
+
+      fprintf(f_sbml, "\t\t\t\t\t</math>\n");
+      fprintf(f_sbml, "\t\t\t\t</kineticLaw>\n");
+
+      fprintf(f_sbml, "\t\t\t</reaction>\n");
+    }
+
+    fprintf(f_sbml, "\t\t</listOfReactions>\n");
+
+    // close the blocks
+    fprintf(f_sbml, "\t</model>\n");
+    fprintf(f_sbml, "</sbml>\n");
+
+    fclose(f_sbml);
+    f_sbml = NULL;
+  }
+
 }
 
 void set_parameters (struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt)
@@ -1897,7 +2160,8 @@ void RIVs(double *y, double *ytmp, double *p, struct topo *topoinfo)
   // printf("\n");
 }
 
-void solve_ODE (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt)
+// solve the ODE by 1st Euler method
+void solve_ODE_euler (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt)
 {
 
   int    n_step     = 1000;
@@ -1941,10 +2205,92 @@ void solve_ODE (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt
       
       for (i = 0; i < topoinfo->numG; i++){
               y[i] = ytmp[i] + yp[i]*simu_opts->stepsize;
-      }
+          }
           
-      t = t + simu_opts->stepsize;
+          t = t + simu_opts->stepsize;
+      }
+      
+      testdelta = sumdelta(y, ytmp, topoinfo->numG);
     }
+  
+  for (i = 0; i < topoinfo->numG; i++){
+    tmprlt->y_store[topoinfo->numG*j + i] = y[i];
+  }
+  
+  free(y);
+  free(yp);
+  free(ytmp);
+}
+
+// solve the ODE by RK-45
+void solve_ODE_rk45 (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt)
+{
+  double abserr;
+  double relerr;
+  int    flag;
+  int    n_step     = 100;
+  int    i_step     = 1;
+  int    i          = 0;
+  double testdelta  = 0.0;
+  double t          = 0.0;
+  double t_out      = 0.0;
+  double t_start    = 0.0;
+  double t_stop     = 0.0;
+  double *y;
+  double *yp;
+  double *ytmp;
+
+  abserr = r4_epsilon ( ); //sqrt ( r4_epsilon ( ) );
+  relerr = r4_epsilon ( ); //sqrt ( r4_epsilon ( ) );
+
+  y     = (double *)calloc(topoinfo->numG,      sizeof(double));
+  yp    = (double *)calloc(topoinfo->numG,      sizeof(double));
+  ytmp  = (double *)calloc(topoinfo->numG,      sizeof(double));
+
+  for (i = 0; i < topoinfo->numG; i++){
+    ytmp[i] = 2000.0;
+  }
+ 
+  int cnt_loop = 0;
+  
+  RIVs(y, ytmp, tmprlt->paras, topoinfo);
+    
+  testdelta = sumdelta(y, ytmp, topoinfo->numG);
+  
+  while (testdelta != 0 && cnt_loop < 20) { // maximum iteration is 20 times
+    t_start = t_stop;
+    t_stop  = t_stop + 100;
+    
+    cnt_loop = cnt_loop + 1;
+
+    model_ODE ( t, ytmp, yp, tmprlt->paras, topoinfo);
+    flag = 1;
+  
+    // printf("RACIPELIB 2008");
+
+    for ( i_step = 1; i_step <= n_step; i_step++ )
+    { 
+        for (i = 0; i < topoinfo->numG; i++){
+            ytmp[i] = y[i];
+        }
+    
+        t = ( ( double ) ( n_step - i_step + 1 ) * t_start  
+            + ( double ) (          i_step - 1 ) * t_stop )
+            / ( double ) ( n_step              );
+
+        t_out = ( ( double ) ( n_step - i_step ) * t_start  
+                + ( double ) (          i_step ) * t_stop )
+                / ( double ) ( n_step          );
+
+        flag = r4_rkf45 (model_ODE, topoinfo->numG, y, yp, tmprlt->paras, topoinfo, &t, t_out, &relerr, abserr, flag );
+        // printf ( "%4d  %12f\n", flag, t); 
+
+        // if (i_step == n_step - 1) {
+        //     printf ( "%4d  %12f  %12f  %12f\n", flag, t, y[0], y[1]); 
+        // }
+    }
+
+    // printf ( "%4d  %12f  %12f  %12f\n", flag, t, y[0], y[1]);
       
     testdelta = sumdelta(y, ytmp, topoinfo->numG);
   }
@@ -1957,6 +2303,7 @@ void solve_ODE (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt
   free(yp);
   free(ytmp);
 }
+
 
 void count_state (struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt)
 // detect the stable states from all the solutions from different RIVs

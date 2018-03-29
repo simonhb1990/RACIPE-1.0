@@ -2,7 +2,7 @@ CC 		= gcc
 CFLAGS  = -g -pg -Wall
 LIBS    = -lm
 
-SRCS = RACIPE.c pcg_basic.c RACIPELIB.c
+SRCS = RACIPE.c pcg_basic.c RACIPELIB.c rkf45.c
 OBJS = $(SRCS:.c=.o)
 
 MAIN = RACIPE

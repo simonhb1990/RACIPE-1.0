@@ -51,6 +51,7 @@ struct rlt {
 
 struct opts {
 	double   maxtime;         // 										  - Maximum running time
+	int 	 solver;		  // 										  - solver for ODEs								
 	int      flag; 			  //										  - Only produce .cfg file or not
 	int      exts; 			  //										  - Extensiton of inputfile: 0 for .topo and 1 for .cfg
 	int      numKD; 		  // 										  - Number of genes or links' KD
@@ -73,6 +74,7 @@ struct opts {
 	double   stepsize;    	  // "Stepsize"                			      - Stepsize for solving ODE;
 	int      maxiters;        // "MaximumOfIterations"     			      - Maximum of Iteration for solving ODE at each RIVs
 	int      Toggle_T_test;   // "TestThreshold"           			      - Toggle to test threshold assumption or not
+	int 	 SBML_model;	  //            			      			  - Export which model in SBML format
 	uint64_t myseed;          //  										  - Random seed set by user
 	double   minP;			  //  										  - Minimum production rate
   	double   maxP;			  //  										  - Maximum production rate
@@ -105,10 +107,12 @@ extern void   read_cfg(struct topo *topoinfo, struct opts *simu_opts, struct rlt
 extern void   run_RACIPE(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
 extern void   save_model_paras(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt, int num);
 extern void   save_model_solns(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt, int num);
+extern void	  export_SBML_model (struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt, int modelID);
 extern void   set_parameters (struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
 extern void   model_ODE(double t,  double *ytmp, double *yp, double *p, struct topo *topoinfo);
 extern void   RIVs(double *y, double *ytmp, double *p, struct topo *topoinfo);
-extern void   solve_ODE (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
+extern void   solve_ODE_euler (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
+extern void   solve_ODE_rk45 (int j, struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
 extern void   count_state (struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
 extern void   T_test(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt, int num);
 extern void   release_memory(struct opts *simu_opts, struct topo *topoinfo, struct rlt *tmprlt);
