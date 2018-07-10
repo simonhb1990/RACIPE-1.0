@@ -1,21 +1,9 @@
-------------------------------------------------------------------<br />
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+We present a user-friendly computational tool for the community to use our newly developed method named random circuit perturbation (RACIPE), to explore the robust dynamical features of gene regulatory circuits without the requirement of detailed kinetic parameters. Taking the network topology as the only input, RACIPE generates an ensemble of circuit models with distinct randomized parameters and uniquely identifies robust dynamical properties by statistical analysis. 
 
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- 
-Paper to cite:
+# References
 Huang, Bin, Mingyang Lu, Dongya Jia, Eshel Ben-Jacob, Herbert Levine, and Jose N. Onuchic. "Interrogating the topological robustness of gene regulatory circuits by randomization." PLoS computational biology 13, no. 3 (2017): e1005456.
 
-This code has used PCG Random Number Generation script by Melissa O'Neill<br />
-------------------------------------------------------------------<br />
+Huang, Bin, Dongya Jia, Jingchen Feng, Herbert Levine, José N. Onuchic, and Mingyang Lu. "RACIPE: a computational tool for modeling gene regulatory circuits using randomization." BMC systems biology 12, no. 1 (2018): 74.
 
 # Make RACIPE 1.0
 Use "make" to compile and use "make clean" to clean all compiled files. The executebale file is named "RACIPE" as default.
@@ -130,3 +118,18 @@ Use "`./RACIPE -h`" to find all available options.<br />
      Below_threshold_A : Number of stable states for current RACIPE model whose expression of gene A is smaller than its threshold parameter of A.
 
      For any model, the probability for gene A's expression to be larger than its threshold equals to the sum of Over_threshold_A across all the models devided by the sum of both Over_threshold_A and Below_threshold_A across all the models.
+
+# License
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+This code has used PCG Random Number Generation script by Melissa O'Neill<br />
