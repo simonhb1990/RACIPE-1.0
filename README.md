@@ -53,7 +53,7 @@ Use "`./RACIPE -h`" to find all available options.<br />
 **-thrd**          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0).<br />
 **-Toggle_f_p**    : Save parameters of each RACIPE model or not (Default 1 (yes)).<br />
 **-stepsize**      : Stepsize for solving ODE (Default 0.1).<br />
-**-maxiters**      : Maximum of Iteration for solving ODE at each RIVs (Default 20).<br />
+**-maxiters**      : Maximum of Iteration for solving ODE at each RIVs times 1000 (Default 20).<br />
 **-Toggle_T_test** : Test threshold assumption or not (Default 1 (yes)).<br />
 **-seed**          : Set up random seed (Default 1). <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*Attention*: the actual seed used by the package is a function of the starting time and the seed set here. -seed is used for the case you run the package at the same time for the same circuit several times. <br /><br />
