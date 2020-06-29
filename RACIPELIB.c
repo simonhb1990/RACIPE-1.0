@@ -232,7 +232,7 @@ void check_inputfile (int argc, char **argv, struct topo *topoinfo, struct opts 
     printf("-thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0).\n");
     printf("-Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes)).\n");
     printf("-stepsize      : Stepsize for solving ODEs (Default 0.1).\n");
-    printf("-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition (Default 20).\n");
+    printf("-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition times 1000 (Default 20).\n");
     printf("-Toggle_T_test : Test the threshold assumption or not (Default 1 (yes)).\n");
     printf("-SBML_model    : Output a model in the SBML format. The parameter will be the ID of the model (start from 1) to save (Default 0 (no SBML output)).\n");
     printf("-seed          : random seed (Default 1).\n");
@@ -534,7 +534,7 @@ void initial_simuopts (int argc, char **argv, struct topo *topoinfo, struct opts
         printf("-thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0).\n");
         printf("-Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes)).\n");
         printf("-stepsize      : Stepsize for solving ODEs (Default 0.1).\n");
-        printf("-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition (Default 20).\n");
+        printf("-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition times 1000 (Default 20).\n");
         printf("-Toggle_T_test : Test the threshold assumption or not (Default 1 (yes)).\n");
         printf("-SBML_model    : Output a model in the SBML format. The parameter will be the ID of the model (start from 1) to save (Default 0 (no SBML output)).\n");
         printf("-seed          : random seed (Default 1).\n");
@@ -2189,7 +2189,7 @@ void solve_ODE_euler (int j, struct opts *simu_opts, struct topo *topoinfo, stru
     
   testdelta = sumdelta(y, ytmp, topoinfo->numG);
   
-  while (testdelta != 0 && cnt_loop < 20) { // maximum iteration is 20 times
+  while (testdelta != 0 && cnt_loop < simu_opts->maxiters) {
     t_start = t_stop;
     t_stop  = t_stop + 100;
     
@@ -2257,7 +2257,7 @@ void solve_ODE_rk45 (int j, struct opts *simu_opts, struct topo *topoinfo, struc
     
   testdelta = sumdelta(y, ytmp, topoinfo->numG);
   
-  while (testdelta != 0 && cnt_loop < 20) { // maximum iteration is 20 times
+  while (testdelta != 0 && cnt_loop < simu_opts->maxiters) {
     t_start = t_stop;
     t_stop  = t_stop + 100;
     

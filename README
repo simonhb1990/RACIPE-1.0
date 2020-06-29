@@ -75,7 +75,7 @@ Use "./RACIPE -h" to find all available options.
 -thrd          : Cutoff for convergence of steady states for numerically solving ODEs (Default 1.0).
 -Toggle_f_p    : Save parameters of each RACIPE model or not (Default 1 (yes)).
 -stepsize      : Stepsize for solving ODEs (Default 0.1).
--maxiters      : The maximum number of iterations for solving ODEs at each random initial condition (Default 20).
+-maxiters      : The maximum number of iterations for solving ODEs at each random initial condition times 1000 (Default 20).
 -Toggle_T_test : Test the threshold assumption or not (Default 1 (yes)).
 -SBML_model    : Output a model in the SBML format. The parameter will be the ID of the model (start from 1) to save (Default 0 (no SBML output)).
 -seed          : random seed (Default 1). 
